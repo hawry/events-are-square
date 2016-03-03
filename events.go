@@ -81,7 +81,14 @@ var (
 	server = kingpin.Flag("srv", "run as server (false=run once and log to file instead of serving web requests)").Short('d').Default("true").Bool()
 )
 
+func handler(w http.ResponseWriter, r *http.Request) {
+	// fmt.Fprint(w, "trollololllolllol")
+	fmt.Fprintf(w, "Headers: %v", r.FormValue("url"))
+	log.Printf("Headers: %v", r.Header)
+}
+
 func main() {
+	http.HandleFunc("/", handler)
 	// kingpin.UsageTemplate(kingpin.SeparateOptionalFlagsUsageTemplate)
 	kingpin.Parse()
 	colog.Register()
@@ -144,6 +151,7 @@ func main() {
 	}
 	f.WriteString("END:VCALENDAR\r\n")
 	log.Printf("info: done parsing, everything seems to be OK!")
+	http.ListenAndServe(":8080", nil)
 }
 
 //to8601 reformats a unix timestamp from json-timestamp to ISO-8601 in UTC (YYYYMMDDTHHmmssZ)
