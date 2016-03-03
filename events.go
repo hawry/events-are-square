@@ -78,13 +78,27 @@ type Upcoming struct {
 var (
 	src    = kingpin.Flag("src", "source URL to fetch rss-feed from").Short('s').Default("http://localhost/events").String()
 	append = kingpin.Flag("autoappend", "append 'format=pretty-json' to source URL automatically").Short('a').Default("false").Bool()
+	server = kingpin.Flag("srv", "run as server (false=run once and log to file instead of serving web requests)").Short('d').Default("true").Bool()
 )
 
 func main() {
-	kingpin.UsageTemplate(kingpin.SeparateOptionalFlagsUsageTemplate)
+	// kingpin.UsageTemplate(kingpin.SeparateOptionalFlagsUsageTemplate)
 	kingpin.Parse()
 	colog.Register()
-	colog.SetFlags(log.Lshortfile)
+	colog.SetFlags(log.LstdFlags)
+	colog.SetDefaultLevel(colog.LDebug)
+
+	if !*server {
+		log.Printf("info: running in single request mode")
+	} else {
+		log.Printf("info: running in server mode")
+	}
+
+	if !*append {
+		log.Printf("info: auto-appending is OFF")
+	} else {
+		log.Printf("info: auto-appending is ON")
+	}
 
 	rsp, err := http.Get(*src)
 	if err != nil {
@@ -99,15 +113,16 @@ func main() {
 		return //TODO log error, do not exit
 	}
 
-	// var dat map[string]interface{}
-	// var w map[string]interface{}
+	log.Printf("info: received response headers: %v", rsp.Header)
+	log.Printf("info: content-length: %v", rsp.ContentLength)
+
 	w := Upcoming{}
 	if err := json.Unmarshal(body, &w); err != nil {
 		log.Printf("err: could not unmarshal file (%v)", err)
 		return
 	}
 
-	log.Printf("ok: unmarshalled file")
+	log.Printf("info: source format OK, unmarshalling")
 
 	f, err := os.Create("./results.ical")
 	if err != nil {
@@ -115,13 +130,8 @@ func main() {
 		return
 	}
 	defer f.Close()
-
-	log.Printf("BEGIN:VCALENDAR")
 	f.WriteString("BEGIN:VCALENDAR\r\n")
-
-	log.Printf("VERSION:2.0")
 	f.WriteString("VERSION:2.0\r\n")
-
 	for _, e := range w.Events {
 		f.WriteString("BEGIN:VEVENT\r\n")
 		uid := fmt.Sprintf("UID:%s\r\n", e.Id)
@@ -129,16 +139,14 @@ func main() {
 		end := fmt.Sprintf("DTEND:%s\r\n", to8601(e.EndDate))
 		summary := fmt.Sprintf("SUMMARY:%s\r\n", e.Title)
 		desc := fmt.Sprintf("DESCRIPTION:%s\r\n", strip.StripTags(e.Body))
-
 		f.WriteString(uid + start + end + summary + desc)
 		f.WriteString("END:VEVENT\r\n")
 	}
-
-	log.Printf("END:VCALENDAR")
 	f.WriteString("END:VCALENDAR\r\n")
-
+	log.Printf("info: done parsing, everything seems to be OK!")
 }
 
+//to8601 reformats a unix timestamp from json-timestamp to ISO-8601 in UTC (YYYYMMDDTHHmmssZ)
 func to8601(t int) string {
 	s := int64(t)
 	s /= 1000
