@@ -5,11 +5,16 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"time"
 
-	"comail.io/go/colog"
+	"gopkg.in/alecthomas/kingpin.v2"
+
+	"github.com/hawry/events-are-square/strip"
 	"github.com/jehiah/go-strftime"
+
+	"comail.io/go/colog"
 )
 
 //Website is a shorthand for the map[string]interface{}
@@ -70,22 +75,34 @@ type Upcoming struct {
 	Events []Event `json:"upcoming"`
 }
 
+var (
+	src    = kingpin.Flag("src", "source URL to fetch rss-feed from").Short('s').Default("http://localhost/events").String()
+	append = kingpin.Flag("autoappend", "append 'format=pretty-json' to source URL automatically").Short('a').Default("false").Bool()
+)
+
 func main() {
+	kingpin.UsageTemplate(kingpin.SeparateOptionalFlagsUsageTemplate)
+	kingpin.Parse()
 	colog.Register()
 	colog.SetFlags(log.Lshortfile)
 
-	fileName := "./testevents.txt"
-
-	b, err := ioutil.ReadFile(fileName)
+	rsp, err := http.Get(*src)
 	if err != nil {
-		log.Printf("err: could not read file (%v)", err)
-		return
+		log.Printf("err: could not open URL '%s' (%v)", *src, err)
+		return //TODO log the error to file, and do not exit application
+	}
+
+	defer rsp.Body.Close()
+	body, err := ioutil.ReadAll(rsp.Body)
+	if err != nil {
+		log.Printf("err: could not read from stream (%v)", err)
+		return //TODO log error, do not exit
 	}
 
 	// var dat map[string]interface{}
 	// var w map[string]interface{}
 	w := Upcoming{}
-	if err := json.Unmarshal(b, &w); err != nil {
+	if err := json.Unmarshal(body, &w); err != nil {
 		log.Printf("err: could not unmarshal file (%v)", err)
 		return
 	}
@@ -111,7 +128,7 @@ func main() {
 		start := fmt.Sprintf("DTSTART:%s\r\n", to8601(e.StartDate))
 		end := fmt.Sprintf("DTEND:%s\r\n", to8601(e.EndDate))
 		summary := fmt.Sprintf("SUMMARY:%s\r\n", e.Title)
-		desc := fmt.Sprintf("DESCRIPTION:%s\r\n", StripTags(e.Body))
+		desc := fmt.Sprintf("DESCRIPTION:%s\r\n", strip.StripTags(e.Body))
 
 		f.WriteString(uid + start + end + summary + desc)
 		f.WriteString("END:VEVENT\r\n")
