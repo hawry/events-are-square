@@ -125,7 +125,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	url := r.FormValue("url")
 	if !(len(url) > 0) || url == "" {
 		log.Printf("warning: could not find url in request")
-		w.WriteHeader(401)
+		w.WriteHeader(405)
 		return
 	}
 	log.Printf("debug: fetching resources at '%s'", url)
