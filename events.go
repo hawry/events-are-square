@@ -75,32 +75,31 @@ type Upcoming struct {
 }
 
 var (
-	src    = kingpin.Flag("src", "source URL to fetch rss-feed from").Short('s').String()
 	append = kingpin.Flag("autoappend", "append 'format=pretty-json' to source URL automatically").Short('a').Default("false").Bool()
-	server = kingpin.Flag("srv", "run as server (false=run once and log to file instead of serving web requests)").Short('d').Default("true").Bool()
-	port   = kingpin.Flag("port", "port to listen for incoming requests on").Short('p').Default("8080").Int()
+	// server = kingpin.Flag("srv", "run as server (false=run once and log to file instead of serving web requests)").Short('d').Default("true").Bool()
+	port = kingpin.Flag("port", "port to listen for incoming requests on").Short('p').Default("8080").Int()
 )
 
 func fetchEvents(url string) (string, error) {
+	if *append {
+		url = fmt.Sprintf("%s?format=json", url)
+	}
 	rsp, err := http.Get(url)
 	if err != nil {
-		log.Printf("err: could not open URL '%s' (%v)", url, err)
-		return "", err
+		rerr := fmt.Errorf("could not open url '%s' (%v)", url, err)
+		return "", rerr
 	}
 
 	defer rsp.Body.Close()
 	body, err := ioutil.ReadAll(rsp.Body)
 	if err != nil {
-		log.Printf("err: could not read from stream (%v)", err)
-		return "", err
+		rerr := fmt.Errorf("could not read stream content (%v)", err)
+		return "", rerr
 	}
-	log.Printf("info: received response headers: %v", rsp.Header)
-	log.Printf("info: content-length: %v", rsp.ContentLength)
-
 	w := Upcoming{}
 	if err := json.Unmarshal(body, &w); err != nil {
-		log.Printf("err: could not unmarshal file (%v)", err)
-		return "", err
+		rerr := fmt.Errorf("could not unmarshal response body (%v)", err)
+		return "", rerr
 	}
 	log.Printf("info: source format OK, unmarshalling")
 	var sVal string
@@ -117,7 +116,7 @@ func fetchEvents(url string) (string, error) {
 		sVal += "END:VEVENT\r\n"
 	}
 	sVal += "END:VCALENDAR\r\n"
-	log.Printf("info: done parsing, everything seems to be OK!")
+	log.Printf("info: sending response in VCAL format to requester")
 	return sVal, nil
 }
 
@@ -128,7 +127,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(405)
 		return
 	}
-	log.Printf("debug: fetching resources at '%s'", url)
+	log.Printf("info: fetching resources at '%s'", url)
 	respBody, err := fetchEvents(url)
 	if err != nil {
 		log.Printf("err: could not fetch events (%v)", err)
@@ -145,22 +144,15 @@ func main() {
 
 	kingpin.Parse()
 	colog.Register()
+	colog.ParseFields(true)
 	colog.SetFlags(log.LstdFlags)
-	colog.SetDefaultLevel(colog.LDebug)
+	colog.SetDefaultLevel(colog.LInfo)
 
-	if !*server {
-		log.Printf("info: running in single request mode")
-	} else {
-		log.Printf("info: running in server mode")
-	}
+	log.Printf("running as server\t%t", true)
+	log.Printf("listen port\t%d", *port)
+	log.Printf("autoappend\t%t", *append)
 
-	if !*append {
-		log.Printf("info: auto-appending is OFF")
-	} else {
-		log.Printf("info: auto-appending is ON")
-	}
-	log.Printf("info: running server on port %d", *port)
-	http.ListenAndServe(fmt.Sprintf(":%d", *port), nil)
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", *port), nil))
 }
 
 //to8601 reformats a unix timestamp from json-timestamp to ISO-8601 in UTC (YYYYMMDDTHHmmssZ)
