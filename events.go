@@ -75,16 +75,16 @@ type Upcoming struct {
 }
 
 var (
-	src    = kingpin.Flag("src", "source URL to fetch rss-feed from").Short('s').Default("http://localhost/events/index.txt").String()
+	src    = kingpin.Flag("src", "source URL to fetch rss-feed from").Short('s').String()
 	append = kingpin.Flag("autoappend", "append 'format=pretty-json' to source URL automatically").Short('a').Default("false").Bool()
 	server = kingpin.Flag("srv", "run as server (false=run once and log to file instead of serving web requests)").Short('d').Default("true").Bool()
 	port   = kingpin.Flag("port", "port to listen for incoming requests on").Short('p').Default("8080").Int()
 )
 
 func fetchEvents(url string) (string, error) {
-	rsp, err := http.Get(*src)
+	rsp, err := http.Get(url)
 	if err != nil {
-		log.Printf("err: could not open URL '%s' (%v)", *src, err)
+		log.Printf("err: could not open URL '%s' (%v)", url, err)
 		return "", err
 	}
 
@@ -124,7 +124,7 @@ func fetchEvents(url string) (string, error) {
 func handler(w http.ResponseWriter, r *http.Request) {
 	url := r.FormValue("url")
 	if !(len(url) > 0) || url == "" {
-		log.Printf("warning: could not find url in request")
+		log.Printf("warning: could not find url in request (%v)", r.Header)
 		w.WriteHeader(405)
 		return
 	}
