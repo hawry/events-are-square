@@ -78,6 +78,7 @@ var (
 	src    = kingpin.Flag("src", "source URL to fetch rss-feed from").Short('s').Default("http://localhost/events/index.txt").String()
 	append = kingpin.Flag("autoappend", "append 'format=pretty-json' to source URL automatically").Short('a').Default("false").Bool()
 	server = kingpin.Flag("srv", "run as server (false=run once and log to file instead of serving web requests)").Short('d').Default("true").Bool()
+	port   = kingpin.Flag("port", "port to listen for incoming requests on").Short('p').Default("8080").Int()
 )
 
 func fetchEvents(url string) (string, error) {
@@ -158,7 +159,8 @@ func main() {
 	} else {
 		log.Printf("info: auto-appending is ON")
 	}
-	http.ListenAndServe(":8080", nil)
+	log.Printf("info: running server on port %d", *port)
+	http.ListenAndServe(fmt.Sprintf(":%d", *port), nil)
 }
 
 //to8601 reformats a unix timestamp from json-timestamp to ISO-8601 in UTC (YYYYMMDDTHHmmssZ)
