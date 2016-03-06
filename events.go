@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"time"
 
 	"gopkg.in/alecthomas/kingpin.v2"
@@ -81,15 +80,68 @@ var (
 	server = kingpin.Flag("srv", "run as server (false=run once and log to file instead of serving web requests)").Short('d').Default("true").Bool()
 )
 
+func fetchEvents(url string) (string, error) {
+	rsp, err := http.Get(*src)
+	if err != nil {
+		log.Printf("err: could not open URL '%s' (%v)", *src, err)
+		return "", err
+	}
+
+	defer rsp.Body.Close()
+	body, err := ioutil.ReadAll(rsp.Body)
+	if err != nil {
+		log.Printf("err: could not read from stream (%v)", err)
+		return "", err
+	}
+	log.Printf("info: received response headers: %v", rsp.Header)
+	log.Printf("info: content-length: %v", rsp.ContentLength)
+
+	w := Upcoming{}
+	if err := json.Unmarshal(body, &w); err != nil {
+		log.Printf("err: could not unmarshal file (%v)", err)
+		return "", err
+	}
+	log.Printf("info: source format OK, unmarshalling")
+	var sVal string
+	sVal += "BEGIN:VCALENDAR\r\n"
+	sVal += "VERSION:2.0\r\n"
+	for _, e := range w.Events {
+		sVal += "BEGIN:VEVENT\r\n"
+		uid := fmt.Sprintf("UID:%s\r\n", e.Id)
+		start := fmt.Sprintf("DTSTART:%s\r\n", to8601(e.StartDate))
+		end := fmt.Sprintf("DTEND:%s\r\n", to8601(e.EndDate))
+		summary := fmt.Sprintf("SUMMARY:%s\r\n", e.Title)
+		desc := fmt.Sprintf("DESCRIPTION:%s\r\n", strip.StripTags(e.Body))
+		sVal += uid + start + end + summary + desc
+		sVal += "END:VEVENT\r\n"
+	}
+	sVal += "END:VCALENDAR\r\n"
+	log.Printf("info: done parsing, everything seems to be OK!")
+	return sVal, nil
+}
+
 func handler(w http.ResponseWriter, r *http.Request) {
-	// fmt.Fprint(w, "trollololllolllol")
-	fmt.Fprintf(w, "Headers: %v", r.FormValue("url"))
-	log.Printf("Headers: %v", r.Header)
+	url := r.FormValue("url")
+	if !(len(url) > 0) || url == "" {
+		log.Printf("warning: could not find url in request")
+		w.WriteHeader(401)
+		return
+	}
+	log.Printf("debug: fetching resources at '%s'", url)
+	respBody, err := fetchEvents(url)
+	if err != nil {
+		log.Printf("err: could not fetch events (%v)", err)
+		w.WriteHeader(405)
+		return
+	}
+	w.WriteHeader(200)
+	w.Write([]byte(respBody))
+	log.Printf("success: sending parsed ical format to requester")
 }
 
 func main() {
 	http.HandleFunc("/", handler)
-	// kingpin.UsageTemplate(kingpin.SeparateOptionalFlagsUsageTemplate)
+
 	kingpin.Parse()
 	colog.Register()
 	colog.SetFlags(log.LstdFlags)
@@ -106,51 +158,6 @@ func main() {
 	} else {
 		log.Printf("info: auto-appending is ON")
 	}
-
-	rsp, err := http.Get(*src)
-	if err != nil {
-		log.Printf("err: could not open URL '%s' (%v)", *src, err)
-		return //TODO log the error to file, and do not exit application
-	}
-
-	defer rsp.Body.Close()
-	body, err := ioutil.ReadAll(rsp.Body)
-	if err != nil {
-		log.Printf("err: could not read from stream (%v)", err)
-		return //TODO log error, do not exit
-	}
-
-	log.Printf("info: received response headers: %v", rsp.Header)
-	log.Printf("info: content-length: %v", rsp.ContentLength)
-
-	w := Upcoming{}
-	if err := json.Unmarshal(body, &w); err != nil {
-		log.Printf("err: could not unmarshal file (%v)", err)
-		return
-	}
-
-	log.Printf("info: source format OK, unmarshalling")
-
-	f, err := os.Create("./results.ical")
-	if err != nil {
-		log.Printf("err: could not create file")
-		return
-	}
-	defer f.Close()
-	f.WriteString("BEGIN:VCALENDAR\r\n")
-	f.WriteString("VERSION:2.0\r\n")
-	for _, e := range w.Events {
-		f.WriteString("BEGIN:VEVENT\r\n")
-		uid := fmt.Sprintf("UID:%s\r\n", e.Id)
-		start := fmt.Sprintf("DTSTART:%s\r\n", to8601(e.StartDate))
-		end := fmt.Sprintf("DTEND:%s\r\n", to8601(e.EndDate))
-		summary := fmt.Sprintf("SUMMARY:%s\r\n", e.Title)
-		desc := fmt.Sprintf("DESCRIPTION:%s\r\n", strip.StripTags(e.Body))
-		f.WriteString(uid + start + end + summary + desc)
-		f.WriteString("END:VEVENT\r\n")
-	}
-	f.WriteString("END:VCALENDAR\r\n")
-	log.Printf("info: done parsing, everything seems to be OK!")
 	http.ListenAndServe(":8080", nil)
 }
 
