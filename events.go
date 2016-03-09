@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"runtime"
+	"strconv"
 	"time"
 
 	"gopkg.in/alecthomas/kingpin.v2"
@@ -22,8 +24,8 @@ type Website map[string]interface{}
 //Author represents author info in a specific event
 type Author struct {
 	Id                  string `json:"id"`
-	LastLoginOn         int    `json:"lastLoginOn"`
-	LastActiveOn        int    `json:"lastActiveOn"`
+	LastLoginOn         int64  `json:"lastLoginOn"`
+	LastActiveOn        int64  `json:"lastActiveOn"`
 	IsDeactivated       bool   `json:"isDeactivated"`
 	Deleted             bool   `json:"deleted"`
 	DisplayName         string `json:"displayName"`
@@ -31,15 +33,15 @@ type Author struct {
 	LastName            string `json:"lastName"`
 	EmailVerified       bool   `json:"emailVerified"`
 	Bio                 string `json:"bio"`
-	RevalidateTimestamp int    `json:"revalidateTimestamp"`
+	RevalidateTimestamp int64  `json:"revalidateTimestamp"`
 	SystemGenerated     bool   `json:"systemGenerated"`
 }
 
 //StructuredContent conains information about the event startdate/enddate
 type StructuredContent struct {
 	Type      string `json:"_type"`
-	StartDate int    `json:"startDate"`
-	EndDate   int    `json:"endDate"`
+	StartDate int64  `json:"startDate"`
+	EndDate   int64  `json:"endDate"`
 }
 
 //Items is a dummy struct as of now
@@ -51,9 +53,9 @@ type Event struct {
 	Id                string            `json:"id"`
 	CollectionId      string            `json:"collectionId"`
 	RecordType        int               `json:"recordType"`
-	AddedOn           int               `json:"addedOn"`
-	UpdatedOn         int               `json:"updatedOn"`
-	PublishOn         int               `json:"publishOn"`
+	AddedOn           int64             `json:"addedOn"`
+	UpdatedOn         int64             `json:"updatedOn"`
+	PublishOn         int64             `json:"publishOn"`
 	AuthorId          string            `json:"authorId"`
 	UrlId             string            `json:"urlId"`
 	Title             string            `json:"title"`
@@ -64,8 +66,8 @@ type Event struct {
 	AssetUrl          string            `json:"assetUrl"`
 	ContentType       string            `json:"contentType"`
 	StructuredContent StructuredContent `json:"structuredContent"`
-	StartDate         int               `json:"startDate"`
-	EndDate           int               `json:"endDate"`
+	StartDate         int64             `json:"startDate"`
+	EndDate           int64             `json:"endDate"`
 	Items             []Items           `json:"items"`
 }
 
@@ -83,6 +85,8 @@ var (
 func fetchEvents(url string) (string, error) {
 	if *append {
 		url = fmt.Sprintf("%s?format=json", url)
+		colog.ParseFields(false)
+		log.Printf("debug: appended to total '%s'", url)
 	}
 	rsp, err := http.Get(url)
 	if err != nil {
@@ -99,6 +103,7 @@ func fetchEvents(url string) (string, error) {
 	w := Upcoming{}
 	if err := json.Unmarshal(body, &w); err != nil {
 		rerr := fmt.Errorf("could not unmarshal response body (%v)", err)
+		log.Printf("Dump: %v", string(body))
 		return "", rerr
 	}
 	log.Printf("info: source format OK, unmarshalling")
@@ -148,6 +153,8 @@ func main() {
 	colog.SetFlags(log.LstdFlags)
 	colog.SetDefaultLevel(colog.LInfo)
 
+	log.Printf("system information: %v, %v, %v", runtime.GOOS, runtime.GOARCH, strconv.IntSize)
+
 	log.Printf("running as server\t%t", true)
 	log.Printf("listen port\t%d", *port)
 	log.Printf("autoappend\t%t", *append)
@@ -156,9 +163,8 @@ func main() {
 }
 
 //to8601 reformats a unix timestamp from json-timestamp to ISO-8601 in UTC (YYYYMMDDTHHmmssZ)
-func to8601(t int) string {
-	s := int64(t)
-	s /= 1000
-	ts := time.Unix(s, 0)
+func to8601(t int64) string {
+	t /= 1000
+	ts := time.Unix(t, 0)
 	return strftime.Format("%Y%m%dT%H%M%SZ", ts.UTC())
 }
