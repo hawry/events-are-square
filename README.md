@@ -19,7 +19,7 @@ The idea is that EaS will act as a proxy between Google (or the provider of your
 
 `http://your-eas-server.domain.com/?url=http://your.squarespace.com/calendar?format=json`
 
-**Unfortunately EaS doesn't work on 32-bit systems right now, there's a fix on the way though!**
+**EaS should work on both 32- and 64-bit systems now.**
 
 ### Flags and runtime arguments
 ```
