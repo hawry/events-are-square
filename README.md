@@ -30,3 +30,13 @@ Flags:
   -a, --autoappend  append 'format=pretty-json' to source URL automatically (default is false)
   -p, --port=8080   port to listen for incoming requests on
 ```
+
+## Planned features
+
+*Please note that EaS is a work in progress and is developed during my free time, and therefore might take a while to be updated. You are very welcome to contribute to the project though!*
+
+* Whitelisting/blacklisting of domains
+* Configuration file
+* Adapting release to work with Docker
+* Code cleanup
+* More documentation & use cases
