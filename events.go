@@ -77,6 +77,7 @@ type Upcoming struct {
 	Events []Event `json:"upcoming"`
 }
 
+// (^(http://)?([^\.]*)\.?(helsingkrona.se){1}|^(http://)?([^\.]*)\.?(bproduction.se){1}) and just continue until end of flags :)
 const REGEX_DOMAIN = "^(http://)?([^\\.]*)\\.?(%s){1}"
 
 var builtRegex string
@@ -84,8 +85,8 @@ var builtRegex string
 var (
 	append = kingpin.Flag("autoappend", "append 'format=pretty-json' to source URL automatically").Short('a').Default("false").Bool()
 	// server = kingpin.Flag("srv", "run as server (false=run once and log to file instead of serving web requests)").Short('d').Default("true").Bool()
-	port      = kingpin.Flag("port", "port to listen for incoming requests on").Short('p').Default("8080").Int()
-	topdomain = kingpin.Flag("topdomain", "restrict requests to a specific top-domain").Short('t').String()
+	port      = kingpin.Flag("port", "port to listen for incoming requests on").PlaceHolder("8080").Short('p').Default("8080").Int()
+	topdomain = kingpin.Flag("topdomain", "restrict calendar requests to a specific top-domain").PlaceHolder("hawry.net").Short('t').String()
 )
 
 func fetchEvents(url string) (string, error) {
