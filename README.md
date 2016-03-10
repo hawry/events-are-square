@@ -2,8 +2,6 @@
 
 SquareSpace currently doesn't support export of entire event calendars to iCal/vCal format to use with i.e. Google Calendar. This little tool acts as a proxy between SquareSpace and an iCalendar provider. The project is still considered as a work in progress, but is currently working as intended - though the number of features are quite low.
 
-EaS was created to handle automatic parsing of SquareSpace event calendars and reformat them to iCalendar (vCalendar Version 2-format) with the simple purpose of being able to import them to a google calendar. The application is written in GoLang, and acts as a "proxy" between a icalendar compatible calendar and SquareSpace.
-
 Tested with GoLang v1.6 but should work on GoLang 1.4 and 1.5 as well, and should work on both 32-bit architectures as well as 64-bit.
 
 ### Current status
