@@ -1,4 +1,4 @@
-all: 64 32
+all: 64
 
 64:
 	echo **************** BUILDING 64-BIT EXECUTABLE ****************

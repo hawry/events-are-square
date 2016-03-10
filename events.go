@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"regexp"
 	"runtime"
 	"strconv"
 	"time"
@@ -76,13 +77,19 @@ type Upcoming struct {
 	Events []Event `json:"upcoming"`
 }
 
+const REGEX_DOMAIN = "^(http://)?([^\\.]*)\\.?(%s){1}"
+
+var builtRegex string
+
 var (
 	append = kingpin.Flag("autoappend", "append 'format=pretty-json' to source URL automatically").Short('a').Default("false").Bool()
 	// server = kingpin.Flag("srv", "run as server (false=run once and log to file instead of serving web requests)").Short('d').Default("true").Bool()
-	port = kingpin.Flag("port", "port to listen for incoming requests on").Short('p').Default("8080").Int()
+	port      = kingpin.Flag("port", "port to listen for incoming requests on").Short('p').Default("8080").Int()
+	topdomain = kingpin.Flag("topdomain", "restrict requests to a specific top-domain").Short('t').String()
 )
 
 func fetchEvents(url string) (string, error) {
+
 	if *append {
 		url = fmt.Sprintf("%s?format=json", url)
 		colog.ParseFields(false)
@@ -100,6 +107,12 @@ func fetchEvents(url string) (string, error) {
 		rerr := fmt.Errorf("could not read stream content (%v)", err)
 		return "", rerr
 	}
+
+	if rsp.StatusCode == 429 {
+		rerr := fmt.Errorf("remote end returned a %s error", http.StatusText(429))
+		return "", rerr
+	}
+
 	w := Upcoming{}
 	if err := json.Unmarshal(body, &w); err != nil {
 		rerr := fmt.Errorf("could not unmarshal response body (%v)", err)
@@ -126,12 +139,26 @@ func fetchEvents(url string) (string, error) {
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
+	colog.ParseFields(false)
+	defer colog.ParseFields(true)
+
 	url := r.FormValue("url")
 	if !(len(url) > 0) || url == "" {
 		log.Printf("warning: could not find url in request (%v)", r.Header)
 		w.WriteHeader(405)
 		return
 	}
+
+	if len(*topdomain) > 0 {
+		regex := regexp.MustCompile(builtRegex)
+		if s := regex.FindStringSubmatch(url); !(len(s) > 0) {
+			log.Printf("%+v", s)
+			log.Printf("alert: unauthorized request url found '%s'", url)
+			w.WriteHeader(405)
+			return
+		}
+	}
+
 	log.Printf("info: fetching resources at '%s'", url)
 	respBody, err := fetchEvents(url)
 	if err != nil {
@@ -158,6 +185,11 @@ func main() {
 	log.Printf("running as server\t%t", true)
 	log.Printf("listen port\t%d", *port)
 	log.Printf("autoappend\t%t", *append)
+
+	if len(*topdomain) > 0 {
+		log.Printf("only serving requests from domain '%s'", *topdomain)
+		builtRegex = fmt.Sprintf(REGEX_DOMAIN, *topdomain)
+	}
 
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", *port), nil))
 }
