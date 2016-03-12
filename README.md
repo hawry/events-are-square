@@ -47,3 +47,4 @@ Flags:
 * Support for entire vCalendar specification
 * Code cleanup
 * More documentation & use cases
+* SSL-support
