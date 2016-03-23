@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/Hawry/events-are-square.svg?branch=master)](https://travis-ci.org/Hawry/events-are-square)
+
 # SquareSpace event calendar to iCal
 
 SquareSpace currently doesn't support export of entire event calendars to iCal/vCal format to use with i.e. Google Calendar. This little tool acts as a proxy between SquareSpace and an iCalendar provider. The project is still considered as a work in progress, but is currently working as intended - though the number of features are quite low.
