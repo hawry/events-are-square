@@ -1,0 +1,26 @@
+mode: set
+github.com/Hawry/events-are-square/events.go:92.46,93.13 1 0
+github.com/Hawry/events-are-square/events.go:98.2,99.16 2 0
+github.com/Hawry/events-are-square/events.go:103.2,105.16 3 0
+github.com/Hawry/events-are-square/events.go:110.2,110.27 1 0
+github.com/Hawry/events-are-square/events.go:115.2,116.49 2 0
+github.com/Hawry/events-are-square/events.go:121.2,125.29 5 0
+github.com/Hawry/events-are-square/events.go:135.2,137.18 3 0
+github.com/Hawry/events-are-square/events.go:93.13,97.3 3 0
+github.com/Hawry/events-are-square/events.go:99.16,102.3 2 0
+github.com/Hawry/events-are-square/events.go:105.16,108.3 2 0
+github.com/Hawry/events-are-square/events.go:110.27,113.3 2 0
+github.com/Hawry/events-are-square/events.go:116.49,120.3 3 0
+github.com/Hawry/events-are-square/events.go:125.29,134.3 8 0
+github.com/Hawry/events-are-square/events.go:140.54,145.34 4 0
+github.com/Hawry/events-are-square/events.go:151.2,151.25 1 0
+github.com/Hawry/events-are-square/events.go:161.2,163.16 3 0
+github.com/Hawry/events-are-square/events.go:168.2,170.64 3 0
+github.com/Hawry/events-are-square/events.go:145.34,149.3 3 0
+github.com/Hawry/events-are-square/events.go:151.25,153.56 2 0
+github.com/Hawry/events-are-square/events.go:153.56,158.4 4 0
+github.com/Hawry/events-are-square/events.go:163.16,167.3 3 0
+github.com/Hawry/events-are-square/events.go:173.13,188.25 11 0
+github.com/Hawry/events-are-square/events.go:193.2,193.64 1 0
+github.com/Hawry/events-are-square/events.go:188.25,191.3 2 0
+github.com/Hawry/events-are-square/events.go:197.29,201.2 3 1
