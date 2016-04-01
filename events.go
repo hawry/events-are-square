@@ -24,7 +24,7 @@ type Website map[string]interface{}
 
 //Author represents author info in a specific event
 type Author struct {
-	Id                  string `json:"id"`
+	ID                  string `json:"id"`
 	LastLoginOn         int64  `json:"lastLoginOn"`
 	LastActiveOn        int64  `json:"lastActiveOn"`
 	IsDeactivated       bool   `json:"isDeactivated"`
@@ -46,25 +46,24 @@ type StructuredContent struct {
 }
 
 //Items is a dummy struct as of now
-type Items struct {
-}
+type Items struct{}
 
 //Event represents a single event in the upcoming list
 type Event struct {
-	Id                string            `json:"id"`
-	CollectionId      string            `json:"collectionId"`
+	ID                string            `json:"id"`
+	CollectionID      string            `json:"collectionId"`
 	RecordType        int               `json:"recordType"`
 	AddedOn           int64             `json:"addedOn"`
 	UpdatedOn         int64             `json:"updatedOn"`
 	PublishOn         int64             `json:"publishOn"`
-	AuthorId          string            `json:"authorId"`
-	UrlId             string            `json:"urlId"`
+	AuthorID          string            `json:"authorId"`
+	URLID             string            `json:"urlId"`
 	Title             string            `json:"title"`
-	SourceUrl         string            `json:"sourceUrl"`
+	SourceURL         string            `json:"sourceUrl"`
 	Body              string            `json:"body"`
 	Author            Author            `json:"author"`
-	FullUrl           string            `json:"fullUrl"`
-	AssetUrl          string            `json:"assetUrl"`
+	FullURL           string            `json:"fullUrl"`
+	AssetURL          string            `json:"assetUrl"`
 	ContentType       string            `json:"contentType"`
 	StructuredContent StructuredContent `json:"structuredContent"`
 	StartDate         int64             `json:"startDate"`
@@ -78,19 +77,19 @@ type Upcoming struct {
 }
 
 // (^(http://)?([^\.]*)\.?(helsingkrona.se){1}|^(http://)?([^\.]*)\.?(bproduction.se){1}) and just continue until end of flags :)
-const REGEX_DOMAIN = "^(http://)?([^\\.]*)\\.?(%s){1}"
+
+//RegexDomain ... contains the regex pattern to discover top domains in a flag
+const RegexDomain = "^(http://)?([^\\.]*)\\.?(%s){1}"
 
 var builtRegex string
 
 var (
-	append = kingpin.Flag("autoappend", "append 'format=pretty-json' to source URL automatically").Short('a').Default("false").Bool()
-	// server = kingpin.Flag("srv", "run as server (false=run once and log to file instead of serving web requests)").Short('d').Default("true").Bool()
+	append    = kingpin.Flag("autoappend", "append 'format=json' to source URL automatically").Short('a').Default("false").Bool()
 	port      = kingpin.Flag("port", "port to listen for incoming requests on").PlaceHolder("8080").Short('p').Default("8080").Int()
 	topdomain = kingpin.Flag("topdomain", "restrict calendar requests to a specific top-domain").PlaceHolder("hawry.net").Short('t').String()
 )
 
 func fetchEvents(url string) (string, error) {
-
 	if *append {
 		url = fmt.Sprintf("%s?format=json", url)
 		colog.ParseFields(false)
@@ -101,7 +100,6 @@ func fetchEvents(url string) (string, error) {
 		rerr := fmt.Errorf("could not open url '%s' (%v)", url, err)
 		return "", rerr
 	}
-
 	defer rsp.Body.Close()
 	body, err := ioutil.ReadAll(rsp.Body)
 	if err != nil {
@@ -126,7 +124,7 @@ func fetchEvents(url string) (string, error) {
 	sVal += "VERSION:2.0\r\n"
 	for _, e := range w.Events {
 		sVal += "BEGIN:VEVENT\r\n"
-		uid := fmt.Sprintf("UID:%s\r\n", e.Id)
+		uid := fmt.Sprintf("UID:%s\r\n", e.ID)
 		start := fmt.Sprintf("DTSTART:%s\r\n", to8601(e.StartDate))
 		end := fmt.Sprintf("DTEND:%s\r\n", to8601(e.EndDate))
 		summary := fmt.Sprintf("SUMMARY:%s\r\n", e.Title)
@@ -189,7 +187,7 @@ func main() {
 
 	if len(*topdomain) > 0 {
 		log.Printf("only serving requests from domain '%s'", *topdomain)
-		builtRegex = fmt.Sprintf(REGEX_DOMAIN, *topdomain)
+		builtRegex = fmt.Sprintf(RegexDomain, *topdomain)
 	}
 
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", *port), nil))
