@@ -30,13 +30,18 @@ The idea is that EaS will act as a proxy between Google (or the provider of your
 usage: events [<flags>]
 
 Flags:
-      --help                 Show context-sensitive help (also try --help-long
-                             and --help-man).
-  -a, --autoappend           append 'format=pretty-json' to source URL
+      --help                 Show context-sensitive help (also try
+                             --help-long and --help-man).
+  -a, --autoappend           append 'format=json' to source URL
                              automatically
   -p, --port=8080            port to listen for incoming requests on
-  -t, --topdomain=hawry.net  restrict calendar requests to a specific top-domain
+  -t, --topdomain=hawry.net  restrict calendar requests to a specific
+                             top-domain
+  -z, --timezone=TIMEZONE    add timezoneid to all events
 ```
+
+#### Timezones
+Unless otherwise specified, the timezone will be in UTC (Zulu-time). To change timezone append the flag `-z` or `--timezone=TIMEZONE` where TIMEZONE is the country code according to the [Zone.tab][1] file.
 
 ## Planned features
 
@@ -50,3 +55,5 @@ Flags:
 * Code cleanup
 * More documentation & use cases
 * SSL-support
+
+[1]: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones

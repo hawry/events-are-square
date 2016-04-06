@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"runtime"
 	"strconv"
+	"strings"
 	"time"
 
 	"gopkg.in/alecthomas/kingpin.v2"
@@ -88,7 +89,7 @@ var (
 	port      = kingpin.Flag("port", "port to listen for incoming requests on").PlaceHolder("8080").Short('p').Default("8080").Int()
 	topdomain = kingpin.Flag("topdomain", "restrict calendar requests to a specific top-domain").PlaceHolder("hawry.net").Short('t').String()
 	timezone  = kingpin.Flag("timezone", "add timezoneid to all events").Short('z').String()
-	usrTZ     string
+	usrTZ     = "UTC"
 	zoneMap   map[string]string
 )
 
@@ -209,7 +210,7 @@ func main() {
 func to8601(t int64) string {
 	t /= 1000
 	ts := time.Unix(t, 0)
-	if usrTZ != "UTC" {
+	if strings.Compare(usrTZ, "UTC") != 0 {
 		sTime := strftime.Format("%Y%m%dT%H%M%S", ts.Local())
 		return fmt.Sprintf(";TZID=%s:%s", usrTZ, sTime)
 	}
