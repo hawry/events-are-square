@@ -87,6 +87,9 @@ var (
 	append    = kingpin.Flag("autoappend", "append 'format=json' to source URL automatically").Short('a').Default("false").Bool()
 	port      = kingpin.Flag("port", "port to listen for incoming requests on").PlaceHolder("8080").Short('p').Default("8080").Int()
 	topdomain = kingpin.Flag("topdomain", "restrict calendar requests to a specific top-domain").PlaceHolder("hawry.net").Short('t').String()
+	timezone  = kingpin.Flag("timezone", "add timezoneid to all events").Short('z').String()
+	usrTZ     string
+	zoneMap   map[string]string
 )
 
 func fetchEvents(url string) (string, error) {
@@ -106,7 +109,6 @@ func fetchEvents(url string) (string, error) {
 		rerr := fmt.Errorf("could not read stream content (%v)", err)
 		return "", rerr
 	}
-
 	if rsp.StatusCode == 429 {
 		rerr := fmt.Errorf("remote end returned a %s error", http.StatusText(429))
 		return "", rerr
@@ -125,8 +127,8 @@ func fetchEvents(url string) (string, error) {
 	for _, e := range w.Events {
 		sVal += "BEGIN:VEVENT\r\n"
 		uid := fmt.Sprintf("UID:%s\r\n", e.ID)
-		start := fmt.Sprintf("DTSTART:%s\r\n", to8601(e.StartDate))
-		end := fmt.Sprintf("DTEND:%s\r\n", to8601(e.EndDate))
+		start := fmt.Sprintf("DTSTART%s\r\n", to8601(e.StartDate))
+		end := fmt.Sprintf("DTEND%s\r\n", to8601(e.EndDate))
 		summary := fmt.Sprintf("SUMMARY:%s\r\n", e.Title)
 		desc := fmt.Sprintf("DESCRIPTION:%s\r\n", strip.StripTags(e.Body))
 		sVal += uid + start + end + summary + desc
@@ -190,6 +192,16 @@ func main() {
 		builtRegex = fmt.Sprintf(RegexDomain, *topdomain)
 	}
 
+	if len(*timezone) > 0 {
+		zoneMap = createMap()
+		usrTZ = "UTC"
+		if !(len(zoneMap[*timezone]) > 0) {
+			log.Printf("warning: invalid timezone chosen '%s'. All times will be in %s", *timezone, usrTZ)
+		} else {
+			usrTZ = zoneMap[*timezone]
+			log.Printf("info: user defined timezone is '%s'", usrTZ)
+		}
+	}
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", *port), nil))
 }
 
@@ -197,5 +209,10 @@ func main() {
 func to8601(t int64) string {
 	t /= 1000
 	ts := time.Unix(t, 0)
-	return strftime.Format("%Y%m%dT%H%M%SZ", ts.UTC())
+	if usrTZ != "UTC" {
+		sTime := strftime.Format("%Y%m%dT%H%M%S", ts.Local())
+		return fmt.Sprintf(";TZID=%s:%s", usrTZ, sTime)
+	}
+	sTime := strftime.Format("%Y%m%dT%H%M%SZ", ts.UTC())
+	return fmt.Sprintf(":%s", sTime)
 }
