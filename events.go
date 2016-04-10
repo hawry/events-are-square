@@ -89,6 +89,7 @@ var (
 	port      = kingpin.Flag("port", "port to listen for incoming requests on").PlaceHolder("8080").Short('p').Default("8080").Int()
 	topdomain = kingpin.Flag("topdomain", "restrict calendar requests to a specific top-domain").PlaceHolder("hawry.net").Short('t').String()
 	timezone  = kingpin.Flag("timezone", "add timezoneid to all events").Short('z').String()
+	offset    = kingpin.Flag("offset", "add number of hours as offset and (fake) UTC").Short('o').Default("0").Int()
 	usrTZ     = "UTC"
 	zoneMap   map[string]string
 )
@@ -209,6 +210,7 @@ func main() {
 //to8601 reformats a unix timestamp from json-timestamp to ISO-8601 in UTC (YYYYMMDDTHHmmssZ)
 func to8601(t int64) string {
 	t /= 1000
+	t += fixOffset()
 	ts := time.Unix(t, 0)
 	if strings.Compare(usrTZ, "UTC") != 0 {
 		sTime := strftime.Format("%Y%m%dT%H%M%S", ts.Local())
@@ -216,4 +218,8 @@ func to8601(t int64) string {
 	}
 	sTime := strftime.Format("%Y%m%dT%H%M%SZ", ts.UTC())
 	return fmt.Sprintf(":%s", sTime)
+}
+
+func fixOffset() int64 {
+	return int64((*offset) * 60 * 60)
 }
