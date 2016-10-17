@@ -55,5 +55,6 @@ Unless otherwise specified, the timezone will be in UTC (Zulu-time). To change t
 * Code cleanup
 * More documentation & use cases
 * SSL-support
+* Simple systemd configuration
 
 [1]: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
