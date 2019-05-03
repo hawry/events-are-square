@@ -16,7 +16,7 @@ import (
 	"github.com/hawry/events-are-square/strip"
 	"github.com/jehiah/go-strftime"
 
-	"comail.io/go/colog"
+	"github.com/comail/colog"
 )
 
 //Website is a shorthand for the map[string]interface{}
@@ -124,14 +124,16 @@ func fetchEvents(url string) (string, error) {
 	var sVal string
 	sVal += "BEGIN:VCALENDAR\r\n"
 	sVal += "VERSION:2.0\r\n"
+	sVal += "PRODID:Events are Square\r\n"
 	for _, e := range w.Events {
 		sVal += "BEGIN:VEVENT\r\n"
 		uid := fmt.Sprintf("UID:%s\r\n", e.ID)
+        dtstamp := fmt.Sprintf("DTSTAMP%s\r\n", to8601(e.PublishOn))
 		start := fmt.Sprintf("DTSTART%s\r\n", to8601(e.StartDate))
 		end := fmt.Sprintf("DTEND%s\r\n", to8601(e.EndDate))
 		summary := fmt.Sprintf("SUMMARY:%s\r\n", e.Title)
 		desc := fmt.Sprintf("DESCRIPTION:%s\r\n", strip.StripTags(e.Body))
-		sVal += uid + start + end + summary + desc
+		sVal += uid + dtstamp + start + end + summary + desc
 		sVal += "END:VEVENT\r\n"
 	}
 	sVal += "END:VCALENDAR\r\n"
