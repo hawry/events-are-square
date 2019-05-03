@@ -1,0 +1,9 @@
+[Unit]
+Description=Squarespace calendar collection to iCalendar translating proxy
+Documentation=https://github.com/hawry/events-are-square
+
+[Service]
+ExecStart=/usr/local/bin/eas
+
+[Install]
+WantedBy=multi-user.target

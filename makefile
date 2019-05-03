@@ -25,3 +25,6 @@ run32: 32
 
 install:
 	ln -s `pwd`/$(OUT) /usr/local/bin/$(OUT)
+	cp -p `pwd`/events-are-square.service /etc/systemd/system/
+	sed --in-place='' -e 's/^ExecStart=.*/ExecStart=\/usr\/local\/bin\/$(OUT)/' /etc/systemd/system/events-are-square.service
+	systemctl daemon-reload
