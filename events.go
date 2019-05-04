@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"runtime"
 	"strconv"
+	"strings"
 	"time"
 
 	"gopkg.in/alecthomas/kingpin.v2"
@@ -16,7 +17,7 @@ import (
 	"github.com/hawry/events-are-square/strip"
 	"github.com/jehiah/go-strftime"
 
-	"comail.io/go/colog"
+	"github.com/comail/colog"
 )
 
 //Website is a shorthand for the map[string]interface{}
@@ -124,14 +125,16 @@ func fetchEvents(url string) (string, error) {
 	var sVal string
 	sVal += "BEGIN:VCALENDAR\r\n"
 	sVal += "VERSION:2.0\r\n"
+	sVal += "PRODID:Events are Square\r\n"
 	for _, e := range w.Events {
 		sVal += "BEGIN:VEVENT\r\n"
 		uid := fmt.Sprintf("UID:%s\r\n", e.ID)
+		dtstamp := fmt.Sprintf("DTSTAMP%s\r\n", to8601(e.PublishOn))
 		start := fmt.Sprintf("DTSTART%s\r\n", to8601(e.StartDate))
 		end := fmt.Sprintf("DTEND%s\r\n", to8601(e.EndDate))
 		summary := fmt.Sprintf("SUMMARY:%s\r\n", e.Title)
-		desc := fmt.Sprintf("DESCRIPTION:%s\r\n", strip.StripTags(e.Body))
-		sVal += uid + start + end + summary + desc
+		desc := fmt.Sprintf("DESCRIPTION:%s\r\n", toRfc5545Text(e.Body))
+		sVal += uid + dtstamp + start + end + summary + desc
 		sVal += "END:VEVENT\r\n"
 	}
 	sVal += "END:VCALENDAR\r\n"
@@ -215,4 +218,26 @@ func to8601(t int64) string {
 	}
 	sTime := strftime.Format("%Y%m%dT%H%M%SZ", ts.UTC())
 	return fmt.Sprintf(":%s", sTime)
+}
+
+// toRfc5545Text takes a string, possibly formatted as HTML, and
+// translates it to a RFC 5545 `TEXT` value type.
+func toRfc5545Text(s string) string {
+	// Convert body to iCalendar `TEXT`, as per RFC 5545 § 3.3.11.
+	s = strings.Replace(s, "\\", "\\\\;", -1) // Do this first.
+	s = strings.Replace(s, "<br>", "\\n", -1)
+	s = strings.TrimSpace(strip.StripTags(s))
+	s = strings.Replace(s, "&nbsp;", " ", -1)
+	s = strings.Replace(s, ",", "\\,", -1)
+	s = strings.Replace(s, ";", "\\;", -1)
+
+	// Remove blank lines, as per RFC 5545 § 3.1.
+	re := regexp.MustCompile(`(?m)^\s*$`)
+	s = re.ReplaceAllString(s, " \\n")
+
+	// Any remaining content lines must be prefixed with a space
+	// to be considered part of the `DESCRIPTION` we are baout to
+	// print, and not a new property.
+	re = regexp.MustCompile(`(?m)^`)
+	return re.ReplaceAllString(s, " ")
 }
