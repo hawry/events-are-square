@@ -11,7 +11,7 @@ As of now, EaS only supports basic event-information and can convert SquareSpace
 `VEVENT: DTSTART,DTEND,SUMMARY,DESCRIPTION`
 
 ## Installation
-`go get github.com/hawry/events-are-square`
+`go install github.com/hawry/events-are-square@latest`
 or clone this repository.
 ### Dependencies
 Make sure you have all the dependencies installed on your system by changing directory to the source-location of EaS and type:
